@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Download System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h2 {
+            color: #333;
+        }
+        a {
+            text-decoration: none;
+            color: #0066cc;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #004080;
+        }
+    </style>
+</head>
+<body>
+    <h2>Available Files for Download</h2>
+    <?php
+    $uploadDir = 'C:\\xampp\\htdocs\\kaizen_rui_first_project\\uploads';
+    $files = scandir($uploadDir); // Get the list of files in the directory
+
+    foreach ($files as $file) {
+        // Exclude special directories ('.' and '..')
+        if ($file !== '.' && $file !== '..') {
+            // Generate a clickable link for each file
+            echo '<a href="download.php?file=' . urlencode($file) . '">' . htmlspecialchars($file) . '</a><br>';
+        }
+    }
+    ?>
+</body>
+</html>
