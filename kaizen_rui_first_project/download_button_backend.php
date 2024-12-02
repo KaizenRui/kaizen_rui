@@ -17,7 +17,7 @@ function listAllFiles($directory, &$fileList) {
                 listAllFiles($filePath, $fileList); // Recursive call for subdirectories
             } else {
                 // Only add .txt files to the list
-                if (pathinfo($file, PATHINFO_EXTENSION) === 'txt') {
+                if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['txt', 'jpg', 'png', 'docx', 'xlsx'])){
                     $fileList[] = $filePath;
                 }
             }
@@ -49,90 +49,45 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Search and Downloader</title>
     <style>
-        body {
-            font-family: "Poppins", sans-serif;
-            background: linear-gradient(to bottom, #4facfe, #00f2fe);
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
+    body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(to bottom, #4facfe, #00f2fe);
+        color: #333; text-align: center;
+        margin: 0; padding: 20px;
+    }
 
-        h1, h3 {
-            color: #fff;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-        }
+    h1, h3 { color: #fff; text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3); }
 
-        form {
-            margin-bottom: 20px;
-        }
+    input[type="text"], button, .back-button {
+        padding: 10px; border-radius: 30px;
+    }
 
-        input[type="text"] {
-            padding: 10px;
-            width: 300px;
-            border: 2px solid #ccc;
-            border-radius: 30px;
-        }
+    input[type="text"] { width: 300px; border: 2px solid #ccc; }
 
-        button {
-            padding: 10px 20px;
-            border: none;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            color: #fff;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    button, .back-button {
+        border: none; color: #fff;
+        background: linear-gradient(to right, #6a11cb, #2575fc);
+        cursor: pointer; transition: 0.3s;
+    }
 
-        button:hover {
-            background: linear-gradient(to right, #2575fc, #6a11cb);
-            transform: scale(1.05);
-        }
+    button:hover, .back-button:hover { transform: scale(1.05); }
 
-        table {
-            width: 100%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            background: #fff;
-        }
+    table {
+        width: 100%; margin: 20px auto;
+        border-collapse: collapse; background: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
+    th, td {
+        border: 1px solid #ddd; padding: 10px; text-align: center;
+    }
 
-        th {
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            color: white;
-        }
+    th { background: linear-gradient(to right, #6a11cb, #2575fc); color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
 
-        tr:nth-child(even) {
-            background: #f9f9f9;
-        }
+    p { color: #fff; font-size: 1.2rem; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3); }
+</style>
 
-        .back-button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            text-decoration: none;
-            color: #fff;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            border-radius: 30px;
-            transition: all 0.3s ease;
-        }
-
-        .back-button:hover {
-            background: linear-gradient(to right, #2575fc, #6a11cb);
-            transform: scale(1.05);
-        }
-
-        p {
-            color: #fff;
-            font-size: 1.2rem;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-        }
-    </style>
 </head>
 <body>
     <h1>File Search and Downloader</h1>
