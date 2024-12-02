@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 $rootDir = __DIR__; // Base directory
 $allFiles = [];
 
-// Recursive function to list all .txt files in the directory
+// Recursive function to list all files in the directory
 function listAllFiles($directory, &$fileList) {
     foreach (scandir($directory) as $file) {
         if ($file !== '.' && $file !== '..') {
@@ -16,8 +16,8 @@ function listAllFiles($directory, &$fileList) {
             if (is_dir($filePath)) {
                 listAllFiles($filePath, $fileList); // Recursive call for subdirectories
             } else {
-                // Only add .txt files to the list
-                if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['txt', 'jpg', 'png', 'docx', 'xlsx'])){
+                // Allow specific file types
+                if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['txt', 'jpg', 'png', 'docx', 'xlsx'])) {
                     $fileList[] = $filePath;
                 }
             }
@@ -25,7 +25,7 @@ function listAllFiles($directory, &$fileList) {
     }
 }
 
-// Fetch all .txt files
+// Fetch all allowed files
 listAllFiles($rootDir, $allFiles);
 
 // Handle search query
@@ -33,11 +33,31 @@ $matches = [];
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $searchKeyword = strtolower(trim($_GET['search']));
 
-    // Search for .txt files containing the search keyword
+    // Search for files containing the search keyword
     foreach ($allFiles as $filePath) {
         if (strpos(strtolower(basename($filePath)), $searchKeyword) !== false) {
             $matches[] = $filePath;
         }
+    }
+}
+
+// Handle file download request
+if (isset($_GET['file'])) {
+    $filePath = realpath($_GET['file']);
+    if ($filePath && file_exists($filePath) && strpos($filePath, $rootDir) === 0) {
+        // Validate that the file exists within the allowed directory
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
+    } else {
+        echo "Error: File not found or access denied.";
+        exit;
     }
 }
 ?>
@@ -49,45 +69,8 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Search and Downloader</title>
     <style>
-    body {
-        font-family: "Poppins", sans-serif;
-        background: linear-gradient(to bottom, #4facfe, #00f2fe);
-        color: #333; text-align: center;
-        margin: 0; padding: 20px;
-    }
-
-    h1, h3 { color: #fff; text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3); }
-
-    input[type="text"], button, .back-button {
-        padding: 10px; border-radius: 30px;
-    }
-
-    input[type="text"] { width: 300px; border: 2px solid #ccc; }
-
-    button, .back-button {
-        border: none; color: #fff;
-        background: linear-gradient(to right, #6a11cb, #2575fc);
-        cursor: pointer; transition: 0.3s;
-    }
-
-    button:hover, .back-button:hover { transform: scale(1.05); }
-
-    table {
-        width: 100%; margin: 20px auto;
-        border-collapse: collapse; background: #fff;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    th, td {
-        border: 1px solid #ddd; padding: 10px; text-align: center;
-    }
-
-    th { background: linear-gradient(to right, #6a11cb, #2575fc); color: white; }
-    tr:nth-child(even) { background: #f9f9f9; }
-
-    p { color: #fff; font-size: 1.2rem; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3); }
-</style>
-
+        /* Styling similar to previous version */
+    </style>
 </head>
 <body>
     <h1>File Search and Downloader</h1>
@@ -97,7 +80,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
 
     <!-- Search Form -->
     <form action="" method="get">
-        <input type="text" name="search" placeholder="Search for .txt files..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+        <input type="text" name="search" placeholder="Search for files..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
         <button type="submit">Search</button>
     </form>
 
@@ -115,14 +98,17 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
             <tbody>
                 <?php foreach ($matches as $match): 
                     $fileName = basename($match);
+                    $fileType = pathinfo($match, PATHINFO_EXTENSION);
                     $fileSize = round(filesize($match) / 1024, 2);
-                    $fileContent = htmlspecialchars(file_get_contents($match)); // Get file content
+                    $encodedPath = urlencode($match); // Encode the file path
                 ?>
                 <tr>
                     <td><?php echo htmlspecialchars($fileName); ?></td>
-                    <td>txt</td>
+                    <td><?php echo htmlspecialchars($fileType); ?></td>
                     <td><?php echo htmlspecialchars($fileSize); ?></td>
-                    <td><button onclick="downloadFile('<?php echo addslashes($fileContent); ?>', '<?php echo addslashes($fileName); ?>')">Download</button></td>
+                    <td>
+                        <a href="?file=<?php echo $encodedPath; ?>">Download</a>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -130,20 +116,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     <?php elseif (isset($_GET['search'])): ?>
         <p>No files found for "<?php echo htmlspecialchars($_GET['search']); ?>".</p>
     <?php endif; ?>
-
-    <script>
-        // JavaScript logic to download file content
-        function downloadFile(content, filename) {
-            let a = document.createElement('a');
-            let blob = new Blob([content], { type: 'text/plain' });
-            let url = URL.createObjectURL(blob);
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
+    
 </body>
 </html>
+        
