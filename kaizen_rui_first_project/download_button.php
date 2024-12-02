@@ -3,79 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Management System</title>
+    <title>Search and Download Files</title>
     <style>
-        /* Global Styles */
         body {
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            margin: 0;
-            background: linear-gradient(to bottom, #4facfe, #00f2fe);
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow-x: hidden;
+            font-family: Arial, sans-serif;
+            margin: 20px;
         }
-
-        h1 {
-            color: #fff;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-            margin-bottom: 30px;
+        form {
+            margin-bottom: 20px;
         }
-
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
+        input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
-
-        .nav-buttons a {
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        a {
             text-decoration: none;
-            color: #fff;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            padding: 12px 25px;
-            border-radius: 50px;
-            font-size: 1rem;
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #007bff;
         }
-
-        .nav-buttons a:hover {
-            background: linear-gradient(to right, #2575fc, #6a11cb);
-            transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        a:hover {
+            text-decoration: underline;
         }
-
-        /* Parallax Effect Section (if needed) */
-        .parallax {
-            background: url('your-image.jpg') no-repeat center center/cover;
-            height: 300px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
-            margin-top: 50px;
-        }
-
-        .parallax h2 {
-            font-size: 2rem;
+        #results {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to the File Management System</h1>
-    <div class="nav-buttons">
-        <a href="upload_button.html">Go to Upload Files</a>
-        <a href="download_button.php">Go to Download Files</a>
-        <a href="preview.php">Go to Preview Files</a>
+    <h2>Search and Download Files</h2>
+
+    <form action="download_button_backend.php" method="GET">
+        <label for="search">Search for a file:</label>
+        <input type="text" id="search" name="search" placeholder="Enter keywords..." required>
+        <button type="submit">Search</button>
+    </form>
+
+    <div id="results">
+        <?php
+        // Check if search results are available
+        if (isset($_GET['search'])) {
+            // Fetch the search results from the backend
+            $matches = json_decode(file_get_contents('php://input'), true);
+            
+            if (!empty($matches)) {
+                echo "<h3>Search Results:</h3>";
+                echo "<table>";
+                echo "<thead><tr><th>File Name</th><th>File Type</th><th>Size (KB)</th><th>Actions</th></tr></thead>";
+                echo "<tbody>";
+                foreach ($matches as $match) {
+                    $fileName = htmlspecialchars($match['name']);
+                    $fileType = htmlspecialchars($match['type']);
+                    $fileSize = htmlspecialchars($match['size']);
+                    $filePath = htmlspecialchars($match['path']);
+                    echo "<tr>";
+                    echo "<td>{$fileName}</td>";
+                    echo "<td>{$fileType}</td>";
+                    echo "<td>{$fileSize}</td>";
+                    echo "<td><a href=\"{$filePath}\" download>Download</a></td>";
+                    echo "</tr>";
+                }
+                echo "</tbody>";
+                echo "</table>";
+            } else {
+                echo "<p>No files found for \"" . htmlspecialchars($_GET['search']) . "\".</p>";
+            }
+        }
+        ?>
     </div>
-    <div class="parallax">
-        <h2>Manage Your Files Seamlessly</h2>
-    </div>
+ 
 </body>
 </html>
