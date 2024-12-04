@@ -25,11 +25,45 @@ function searchFiles($directory, &$fileList, $keyword) {
     }
 }
 
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "attributes_ref";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
 // Handle search query
 $matches = [];
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $searchKeyword = trim($_GET['search']);
-    searchFiles($rootDir, $matches, $searchKeyword);
+    $filter = isset($_GET['filter']) ? $_GET['filter'] : null;
+
+    if ($filter) {
+        // Database-based filtering
+        $searchKeyword = $conn->real_escape_string($searchKeyword);
+        $query = "SELECT * FROM uploaded_files WHERE $filter LIKE '%$searchKeyword%'";
+        $result = $conn->query($query);
+
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $matches[] = [
+                    'file_name' => $row['file_name'],
+                    'file_type' => $row['file_type'],
+                    'uploader_name' => $row['uploader_name'],
+                    'upload_date' => $row['upload_date']
+                ];
+            }
+        }
+    } else {
+        // File system search (fallback)
+        searchFiles($rootDir, $matches, $searchKeyword);
+    }
 }
 
 // File preview handler
@@ -67,7 +101,7 @@ if (isset($_GET['preview'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search and Preview Files</title>
+    <title>Search and Preview Files with Filters</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,6 +113,11 @@ if (isset($_GET['preview'])) {
         input[type="text"] {
             padding: 10px;
             width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        select {
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -119,41 +158,45 @@ if (isset($_GET['preview'])) {
     </style>
 </head>
 <body>
-    <h2>Search and Preview Files</h2>
+    <h2>Search and Preview Files with Filters</h2>
     <a href="index.html" class="back-button">Back to Main Menu</a>
-    <!-- Search Form -->
+    <!-- Search Form with Filters -->
     <form action="" method="GET">
+        <label for="filter">Filter by:</label>
+        <select name="filter" id="filter" required>
+            <option value="file_name">File Name</option>
+            <option value="file_type">File Type</option>
+            <option value="uploader_name">Uploader Name</option>
+            <option value="upload_date">Upload Date</option>
+        </select>
         <label for="search">Search for a file:</label>
         <input type="text" id="search" name="search" placeholder="Enter keywords..." required>
         <button type="submit">Search</button>
     </form>
 
     <!-- Display Results -->
-    <?php if (isset($_GET['search']) && !empty($matches)): ?>
+    <?php 
+    if (isset($_GET['search']) && !empty($matches)): ?>
         <h3>Search Results:</h3>
         <table>
             <thead>
                 <tr>
                     <th>File Name</th>
                     <th>File Type</th>
+                    <th>Uploader Name</th>
+                    <th>Upload Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($matches as $filePath): 
-                    $fileName = basename($filePath);
-                    $fileType = pathinfo($filePath, PATHINFO_EXTENSION);
-                    $encodedPath = urlencode($filePath); // Encode path for safe use in URLs
-                ?>
+                <?php foreach ($matches as $file): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($fileName); ?></td>
-                    <td><?php echo htmlspecialchars($fileType); ?></td>
+                    <td><?php echo htmlspecialchars($file['file_name']); ?></td>
+                    <td><?php echo htmlspecialchars($file['file_type']); ?></td>
+                    <td><?php echo htmlspecialchars($file['uploader_name']); ?></td>
+                    <td><?php echo htmlspecialchars($file['upload_date']); ?></td>
                     <td>
-                        <?php if (in_array($fileType, $allowedPreviewExtensions)): ?>
-                            <a href="?preview=<?php echo $encodedPath; ?>" target="_blank">Preview</a>
-                        <?php else: ?>
-                            Preview not available
-                        <?php endif; ?>
+                        <a href="?preview=<?php echo urlencode($file['file_name']); ?>" target="_blank">Preview</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
