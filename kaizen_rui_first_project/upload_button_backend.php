@@ -14,7 +14,6 @@ function getFolderSize($folder) {
 
 // Initialize uploader variable
 $uploader = "Unknown"; // Default uploader name if not provided
-
 // Define allowed file types and size limit
 $allowedExtensions = ["pdf", "docx", "txt", "jpg", "jpeg", "png", "gif", "xlsx", "xls", "mp4"];
 $maxFileSize = 25 * 1024 * 1024; // 25 MB in bytes
@@ -26,67 +25,7 @@ echo '<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Management</title>
-    <style>
-        body {
-            font-family: "Poppins", sans-serif;
-            background: linear-gradient(to bottom, #4facfe, #00f2fe);
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
-
-        h3 {
-            color: #fff;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px auto;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            background: #fff;
-        }
-
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-
-        th {
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            color: white;
-        }
-
-        tr:nth-child(even) {
-            background: #f9f9f9;
-        }
-
-        a {
-            text-decoration: none;
-            color: white;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            padding: 10px 20px;
-            border-radius: 50px;
-            margin: 10px;
-            display: inline-block;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        a:hover {
-            background: linear-gradient(to right, #2575fc, #6a11cb);
-            transform: scale(1.05);
-        }
-
-        p {
-            color: #fff;
-            font-size: 1.2rem;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-        }
-    </style>
+    <link rel="stylesheet" href="upload_button_backend.css">
 </head>
 <body>
 ';
