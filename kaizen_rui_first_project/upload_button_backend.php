@@ -126,6 +126,40 @@ if (isset($_POST['submit'])) {
     echo "<p>No file was uploaded.</p>";
 }
 
+      // Database connection details
+      $host = 'localhost';
+      $db = 'attributes_ref';
+      $user = 'root';
+      $pass = '';
+
+      // Establish database connection
+      $conn = new mysqli($host, $user, $pass, $db);
+
+      // Check connection
+      if ($conn->connect_error) {
+          die("Connection failed: " . $conn->connect_error);
+      }
+
+      // Insert file details into the database
+      $stmt = $conn->prepare("INSERT INTO uploaded_files (file_name, file_type, uploader_name) VALUES (?, ?, ?)");
+      $stmt->bind_param("sss", $file_name, $file_type, $uploader);
+
+      // Set variables for insertion
+      $file_name = basename($_FILES["file"]["name"]);
+      $stmt->execute();
+
+      if ($stmt->affected_rows > 0) {
+          echo "<p>File details saved to the database successfully.</p>";
+      } else {
+          echo "<p>Error saving file details to the database.</p>";
+      }
+
+      // Close the statement and connection
+      $stmt->close();
+      $conn->close();
+
+
+
 echo '<a href="index.html">Back to Main Menu</a>';
 echo '<a href="?action=view_files">View Uploaded Files</a>';
 
