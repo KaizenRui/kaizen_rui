@@ -7,14 +7,18 @@ error_reporting(E_ALL);
 $hugging_face_token = "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"; // Replace with your Hugging Face token
 $qwen_model_url = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-72B-Instruct";
 
+// Database credentials
+$db_host = 'localhost';
+$db_user = 'root';
+$db_password = ''; // Replace with your database password
+$db_name = 'attributes_ref'; // Updated to lowercase
+
 // Function to interact with Qwen API
 function interactWithQwen($query) {
     global $hugging_face_token, $qwen_model_url;
 
-    // Prepare API input
     $json_data = json_encode(["inputs" => $query]);
 
-    // Initialize CURL request
     $ch = curl_init($qwen_model_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -24,7 +28,6 @@ function interactWithQwen($query) {
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
 
-    // Execute request and handle response
     $response = curl_exec($ch);
 
     if (curl_errno($ch)) {
@@ -33,10 +36,8 @@ function interactWithQwen($query) {
 
     curl_close($ch);
 
-    // Parse response
     $response_data = json_decode($response, true);
 
-    // Check for a valid generated text
     if (!isset($response_data[0]['generated_text'])) {
         return "Invalid response structure. Full response: " . htmlspecialchars($response);
     }
@@ -44,28 +45,42 @@ function interactWithQwen($query) {
     return $response_data[0]['generated_text'];
 }
 
-// Directory path where files are located
-$folderPath = "C:\\xampp\\htdocs\\kaizen_rui_first_project\\test_qwen";
+// Connect to the database
+$conn = new mysqli($db_host, $db_user, $db_password, $db_name);
 
-// Validate the folder and retrieve files
-if (!is_dir($folderPath)) {
-    die("Error: The specified folder does not exist.");
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 
-$files = array_diff(scandir($folderPath), ['.', '..']); // Exclude . and .. from results
+// Fetch data from uploaded_files table
+$sql = "SELECT id, file_name, file_type, uploader_name, upload_date FROM uploaded_files"; 
+$result = $conn->query($sql);
 
-// Prepare file list for Qwen
-$fileList = empty($files) 
-    ? "No files found in the folder." 
-    : implode(", ", $files);
+// Initialize a string to store the formatted data
+$convertedText = "";
+if ($result->num_rows > 0) {
+    $convertedText .= "id | file name | file type | uploader name | upload date\n";
+    $convertedText .= str_repeat("-", 60) . "\n";
 
-// Simplified query for Qwen
-$queryToQwen = empty($files) 
-    ? "There are no files in the folder. Please confirm."
-    : "Here are the file names: $fileList. Can you confirm this list?";
+    while ($row = $result->fetch_assoc()) {
+        $convertedText .= "{$row['id']} | {$row['file_name']} | {$row['file_type']} | {$row['uploader_name']} | {$row['upload_date']}\n";
+    }
+} else {
+    $convertedText = "No data found in the uploaded_files table.";
+}
 
-// Send query to Qwen API
-$qwenResponse = interactWithQwen($queryToQwen);
+$conn->close();
+
+// Check if the user has submitted a query
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['query'])) {
+    $userQuery = $_POST['query'];
+    $formattedQuery = "Answer the following question based on the data:\n" . $convertedText . "\n" . $userQuery;
+    $qwenResponse = interactWithQwen($formattedQuery);
+} else {
+    $qwenResponse = "Ask a question about the uploaded files.";
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -73,17 +88,32 @@ $qwenResponse = interactWithQwen($queryToQwen);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwen File Listing</title>
+    <title>Qwen Chatbox</title>
     <style>
         body {
             font-family: Arial, sans-serif;
         }
-        .response, .files {
+        .chatbox {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .response {
             margin: 20px 0;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            background-color: #f9f9f9;
+            background-color: #e9f9e9;
         }
         h2 {
             color: #333;
@@ -91,16 +121,18 @@ $qwenResponse = interactWithQwen($queryToQwen);
     </style>
 </head>
 <body>
-    <h2>Qwen File Processing</h2>
+    <div class="chatbox">
+        <h2>Ask Qwen about Uploaded Files</h2>
 
-    <div class="files">
-        <h3>File List:</h3>
-        <pre><?php echo htmlspecialchars($fileList); ?></pre>
-    </div>
+        <form method="POST">
+            <input type="text" name="query" class="input-field" placeholder="Type your question..." required>
+            <button type="submit" class="input-field">Ask</button>
+        </form>
 
-    <div class="response">
-        <h3>Qwen's Response:</h3>
-        <p><?php echo nl2br(htmlspecialchars($qwenResponse)); ?></p>
+        <div class="response">
+            <h3>Qwen's Response:</h3>
+            <p><?php echo nl2br(htmlspecialchars($qwenResponse)); ?></p>
+        </div>
     </div>
 </body>
 </html>
